@@ -4,13 +4,14 @@ import Character, {ChrPosition} from "@/lib/crdt/character";
 import {Operation, OperationType} from "@/lib/crdt/operation";
 
 class Document {
-    chars: SortedList<Character>;
-    operation_history: Operation[] = [];
+    id: string;
+    private chars: SortedList<Character>;
     levelStrategies: string[] = [];
     boundary: number = 10;
     base: number = 1000;
 
-    constructor() {
+    constructor(id: string) {
+        this.id = id;
         const cmp = (a: Character, b: Character) => {
             const arrCmpRes = compareArrays(a.position, b.position);
             if (arrCmpRes === 0) {
@@ -20,16 +21,35 @@ class Document {
             return arrCmpRes;
         }
         this.chars = new SortedList<Character>(cmp);
-        this.chars.insert(new Character("0", [0], ""));
-        this.chars.insert(new Character("1", [1000], ""));
+        this.chars.insert(new Character("0", this.id, [0], ""));
+        this.chars.insert(new Character("1", this.id, [1000], ""));
     }
 
-    delete(chr: Character) {
+    private checkIndexStrict(index: number) {
+        if (index < 0 || index >= this.chars.length) {
+            throw Error("Index out of range")
+        }
+    }
+
+    private checkIndex(index: number) {
+        if (index < 0 || index > this.chars.length) {
+            throw Error("Index out of range")
+        }
+    }
+
+    delete(chr: Character): 0 | 1 {
+        if (!this.chars.exists(chr)) {
+            return 0;
+        }
         this.chars.removeByCmp(chr);
+        return 1;
     }
 
-    deleteIndex(index: number) {
-        this.chars.remove(this.chars.at(index));
+    deleteIndex(index: number): Character {
+        this.checkIndexStrict(index)
+        const character = this.chars.at(index+1)
+        this.chars.remove(character);
+        return character;
     }
 
     // LSEQ shenanigans
@@ -72,60 +92,76 @@ class Document {
         const after = this.chars.at(before + 1);
         const position = this.getPositionBetween(character.position, after.position);
 
-        const new_character = new Character(id, position, value);
+        const new_character = new Character(id, this.id, position, value);
         // Insert the new character at the correct position
         this.chars.insert(new_character);
 
         return new_character
     }
 
-    insertAfterIndex(index: number, id: string, value: string): Character {
+    insertAtIndex(index: number, id: string, value: string): Character {
+        this.checkIndex(index)
         const character = this.chars.at(index);
-        const after = this.chars.at(index + 1);
+        const after = this.chars.at(index+1);
         const position = this.getPositionBetween(character.position, after.position)
 
-        const new_character = new Character(id, position, value);
+        const new_character = new Character(id, this.id, position, value);
         // Insert the new character at the correct position
         this.chars.insert(new_character);
 
         return new_character;
     }
 
-    insert(character: Character) {
+    insert(character: Character): 0 | 1 {
+        if (this.chars.exists(character)) {
+            return 0;
+        }
         this.chars.insert(character);
+        return 1;
     }
 
-    private applyInsert(operation: Operation) {
+    at(index: number): Character {
+        this.checkIndexStrict(index);
+        return this.chars.at(index+1)
+    }
+
+    indexOf(character: Character): number {
+        const idx = this.chars.indexOf(character)
+        if (idx == -1) return -1;
+        return idx - 1;
+    }
+    private applyInsert(operation: Operation): Character{
         if (operation.type != OperationType.Insert) {
             throw Error("Operation must be of type 'INSERT'")
         }
-        const character = new Character(operation.chrId, operation.position, operation.value);
-        if (this.chars.exists(character)) return;
-        this.insert(character);
+        const character = new Character(operation.chrId, this.id, operation.position, operation.value);
+        if (!this.chars.exists(character)){
+            this.insert(character);
+        }
+        return character
     }
 
-    private applyDelete(operation: Operation) {
+    private applyDelete(operation: Operation): Character {
         if (operation.type != OperationType.Delete) {
             throw Error("Operation must be of type 'DELETE'")
         }
-        const character = new Character(operation.chrId, operation.position, "");
+        const character = new Character(operation.chrId, this.id, operation.position, "");
         this.chars.removeByCmp(character);
+        return character
     }
 
     // Ugly code, but it works
-    apply(operation: Operation) {
+    apply(operation: Operation): Character {
         switch (operation.type) {
             case OperationType.Insert:
-                this.applyInsert(operation);
+                return this.applyInsert(operation);
                 break;
             case OperationType.Delete:
-                this.applyDelete(operation);
+                return this.applyDelete(operation);
                 break;
             default:
                 throw new Error(`Unknown operation type: ${operation.type}`);
         }
-
-        this.operation_history.push(operation);
     }
 
     getText() {

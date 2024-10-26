@@ -80,6 +80,7 @@ class LinkedList<T> {
 
 class Queue<T> {
     private list: LinkedList<T>;
+    size = 0;
 
     constructor() {
         this.list = new LinkedList<T>();
@@ -95,10 +96,13 @@ class Queue<T> {
 
     enqueue(data: T) {
         this.list.pushLeft(data);
+        this.size++;
     }
 
     dequeue(): T {
-        return this.list.popRight();
+        const val = this.list.popRight();
+        this.size--;
+        return val;
     }
 }
 

@@ -7,48 +7,59 @@ import { Operation } from "@/lib/crdt/operation.ts";
 // Manages a message queue and handlers for different message types.
 class WSConnection {
     private ws: WebSocket;
-    private queue: Queue<WSMessage<Operation>>;
-    private handlers: Map<MessageType, MessageHandler<MessageData>>;
-    private queueIntervalId: NodeJS.Timeout | null = null;
+    private queue: Queue<WSMessage<MessageData>>;
+    private handlers: Map<MessageType, MessageHandler<any>>;
+    private queueIntervalId: NodeJS.Timeout | undefined = undefined;
+    private retryFlag = false;
+    private listening = false;
+    private connected: boolean;
+    private onConnectionChangeCallback: (connected: boolean) => void;
+    private onConnectingCallback: (connecting: boolean) => void;
+    private onDisconnectCallback: () => void;
 
-    connected: boolean;
-    onConnectionChangeCallback: (connected: boolean) => void;
-    onDisconnectCallback: () => void;
-
-    QUEUE_CHECK_INTERVAL = 1;
+    QUEUE_CHECK_INTERVAL_MS = 10;
     MAX_RETRIES = 10;
-    RETRY_INTERVAL = 3;
+    RETRY_INTERVAL_MS = 3000;
 
-    constructor(clientId: string, documentId: string) {
-        const url = "ws://localhost:8080/ws";
-        const token = "ac83e344-2856-4ae1-a839-55d60c75fa12";
-        const wsUrl = `${url}?cid=${clientId}&d=${documentId}&tok=${token}`;
+    constructor(url: string) {
         this.connected = false;
         this.onConnectionChangeCallback = () => {};
         this.onDisconnectCallback = () => {};
+        this.onConnectingCallback = () =>{}
 
-        this.ws = new WebSocket(wsUrl);
+        this.ws = new WebSocket(url);
         this.setupWs();
         this.queue = new Queue<WSMessage<Operation>>();
         this.handlers = new Map<MessageType, MessageHandler<MessageData>>();
     }
 
     private setupWs() {
+        this.onConnectingCallback(true);
         this.ws.onopen = () => {
+            const prevConnected = this.connected;
             this.connected = true;
-            this.onConnectionChangeCallback(true);
+            if (prevConnected == false) {
+                this.onConnectionChangeCallback(true);
+            }
+            this.onConnectingCallback(false);
         }
 
         this.ws.onclose = () => {
+            const prevConnected = this.connected;
             this.connected = false;
-            this.retryConnect();
-            this.onConnectionChangeCallback(false);
+            if (!this.retryFlag) {
+                this.retryConnect();
+                this.retryFlag = true;
+            }
+            if (prevConnected == true) {
+                this.onConnectionChangeCallback(false);
+            }
         }
     }
 
     // Register a handler for a specific message type.
     // The handler will be called when a message of the specified type is received.
-    registerHandler(type: MessageType, handler: MessageHandler<MessageData>) {
+    registerHandler<T extends MessageData>(type: MessageType, handler: MessageHandler<T>) {
         this.handlers.set(type, handler);
     }
 
@@ -57,7 +68,7 @@ class WSConnection {
     listen() {
         const messageHandler = (event: MessageEvent) => {
             const data = JSON.parse(event.data);
-            const message = new WSMessage<Operation>(data.type, data.data);
+            const message = new WSMessage<MessageData>(data.type, data.data);
             if (this.handlers.has(message.type)) {
                 this.handlers.get(message.type)!(message);
             } else {
@@ -65,13 +76,15 @@ class WSConnection {
             }
         }
         this.ws.addEventListener("message", messageHandler);
+        this.startQueue();
+        this.listening = true;
     }
 
     // Send a message to the server.
     //
     // It doesn't guarantee that the message will be sent immediately.
     // The message will be added to a queue and sent eventually.
-    enqueue(message: WSMessage<Operation>) {
+    enqueue(message: WSMessage<MessageData>) {
         this.queue.enqueue(message);
     }
 
@@ -79,7 +92,7 @@ class WSConnection {
     startQueue() {
         this.queueIntervalId = setInterval(() => {
             this.sendFromQueue();
-        }, this.QUEUE_CHECK_INTERVAL);
+        }, this.QUEUE_CHECK_INTERVAL_MS);
     }
 
     // Stop sending messages from the queue.
@@ -94,6 +107,10 @@ class WSConnection {
         this.onConnectionChangeCallback = callback;
     }
 
+    onConnectingChange(callback: (connecting: boolean) => void) {
+        this.onConnectingCallback = callback;
+    }
+
     // Register a callback to be called when the maximum number of retries is reached.
     // This can be used to notify the user that the connection could not be established.
     onDisconnect(callback: () => void) {
@@ -104,30 +121,43 @@ class WSConnection {
     close() {
         this.stopQueue();
         this.ws.close();
+        this.listening = false;
+        this.queueIntervalId = undefined;
     }
 
     private send(data: any) {
-        this.ws.send(JSON.stringify(data));
+        console.log("sending")
+        this.ws.send(JSON.stringify(data))
     }
 
     private sendFromQueue() {
-        if (!this.queue.isEmpty()) {
+        if (!this.queue.isEmpty() && this.ws.readyState == this.ws.OPEN) {
             const message = this.queue.dequeue();
             this.send(message.toJSON());
         }
     }
 
-    private retryConnect() {
+    retryConnect() {
         let retries = 0;
+        this.onConnectingCallback(true);
         const intervalId = setInterval(() => {
             if (this.connected || retries >= this.MAX_RETRIES) {
+                if (this.connected) {
+                    this.retryFlag = false;
+                } else {
+                    this.onDisconnectCallback();
+                    this.onConnectingCallback(false);
+                }
                 clearInterval(intervalId);
             } else {
                 this.ws = new WebSocket(this.ws.url);
                 this.setupWs();
+                if (this.listening) {
+                    this.listen()
+                }
                 retries++;
             }
-        }, this.RETRY_INTERVAL);
+        }, this.RETRY_INTERVAL_MS);
     }
 }
 

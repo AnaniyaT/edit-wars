@@ -97,3 +97,25 @@ export function insort_right<C>(
   const ix = bisect_right(arr, target, cmp, lo, hi);
   arr.splice(ix, 0, target);
 }
+
+enum Color {
+  DARK_RED = "#820933",
+  VIOLET = "#D84797",
+  SKY_BLUE = "#3ABEFF",
+  CYAN = "#26FFE6",
+  PINK = "#F374AE",
+  DARK_GREEN = "#32533D",
+  SLATE = "#D8CFAF",
+  SLATE_GREEN = "#B8B42D",
+  AVOCADO = "#697A21",
+  RED = "#DD403A",
+  JET_DARK = "#3E363F",
+}
+
+export function randomColor(): Color {
+  const colors = Object.values(Color);
+  let n = colors.length;
+
+  return colors[Math.floor(Math.random() * n)];
+}
+
