@@ -15,6 +15,6 @@ RUN go build -o /app/build/server ./cmd
 
 EXPOSE 8080
 
-CMD ["/app/build/server", "--migrate"]
+RUN chmod +x /app/build/serve.sh
 
 CMD ["/app/build/serve.sh"]

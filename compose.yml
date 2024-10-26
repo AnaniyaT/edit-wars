@@ -12,11 +12,11 @@ services:
       - network
 
   client:
+    env_file:
+      - .env
     build: client
     ports:
       - "3000:3000"
-    environment:
-      - SERVER_BASE_URL=localhost:8080
 
   server:
     env_file:
