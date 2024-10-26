@@ -19,6 +19,10 @@ func (u *PgUserRepository) Find(id uuid.UUID) (entities.User, error) {
 	return u.db.FindOne("id = ?", id)
 }
 
+func (u *PgUserRepository) FindByUsername(username string) (entities.User, error) {
+	return u.db.FindOne("username = ?", username)
+}
+
 func (u *PgUserRepository) FindAll() ([]entities.User, error) {
 	return u.db.FindAll()
 }

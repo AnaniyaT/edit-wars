@@ -27,9 +27,13 @@ func (o *PgOperationRepository) FindByDocumentId(documentId uuid.UUID) ([]entiti
 	return o.db.Find("document_id = ?", documentId)
 }
 
+func (o *PgOperationRepository) FindByDocumentAndClientIds(documentId uuid.UUID, clientId uuid.UUID) ([]entities.Operation, error) {
+	return o.db.Find("client_id = ?, document_id = ?", clientId, documentId)
+}
+
 // Returns all operations of a client with a counter greater than or equal to the given counter.
-func (o *PgOperationRepository) FindGeqCounter(clientId uuid.UUID, counter int) ([]entities.Operation, error) {
-	return o.db.Find("client_id = ?, counter >= ?", clientId, counter)
+func (o *PgOperationRepository) FindGeqCounter(clientId uuid.UUID, documentId uuid.UUID, counter int) ([]entities.Operation, error) {
+	return o.db.Find("client_id = ?, document_id = ?, counter >= ?", clientId, documentId, counter)
 }
 
 func (o *PgOperationRepository) FindAll() ([]entities.Operation, error) {

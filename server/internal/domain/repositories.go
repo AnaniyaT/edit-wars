@@ -10,7 +10,8 @@ type OperationRepository interface {
 	FindOne(clientId uuid.UUID, counter int) (entities.Operation, error)
 	FindByClientId(clientId uuid.UUID) ([]entities.Operation, error)
 	FindByDocumentId(documentId uuid.UUID) ([]entities.Operation, error)
-	FindGeqCounter(clientId uuid.UUID, counter int) ([]entities.Operation, error)
+	FindByDocumentAndClientIds(documentId uuid.UUID, clientId uuid.UUID) ([]entities.Operation, error)
+	FindGeqCounter(clientId uuid.UUID, documentId uuid.UUID, counter int) ([]entities.Operation, error)
 	FindAll() ([]entities.Operation, error)
 	Save(operation entities.Operation) error
 	SaveMany(operations []entities.Operation) error
@@ -22,9 +23,17 @@ type OperationRepository interface {
 type UserRepository interface {
 	Find(id uuid.UUID) (entities.User, error)
 	FindAll() ([]entities.User, error)
+	FindByUsername(username string) (entities.User, error)
 	Save(user entities.User) error
 	Delete(user entities.User) error
 	Exists(id uuid.UUID) (bool, error)
+}
+
+type UserCredentialRepository interface {
+	Find(userId uuid.UUID) (entities.UserCredential, error)
+	Save(userCredential entities.UserCredential) error
+	Delete(userCredential entities.UserCredential) error
+	Exists(userId uuid.UUID) (bool, error)
 }
 
 type DocumentRepository interface {
@@ -32,6 +41,7 @@ type DocumentRepository interface {
 	FindAll() ([]entities.Document, error)
 	FindByUserId(userId uuid.UUID) ([]entities.Document, error)
 	Save(document entities.Document) error
+	Update(document entities.Document) error
 	Delete(document entities.Document) error
 	Exists(id uuid.UUID) (bool, error)
 }

@@ -27,8 +27,12 @@ func (d *PgDocumentRepository) FindAll() ([]entities.Document, error) {
 	return d.db.FindAll()
 }
 
-func (d *PgDocumentRepository) Save(entity entities.Document) error {
-	return d.db.Save(entity)
+func (d *PgDocumentRepository) Save(document entities.Document) error {
+	return d.db.Save(document)
+}
+
+func (d *PgDocumentRepository) Update(document entities.Document) error {
+	return d.db.Update(document)
 }
 
 func (d *PgDocumentRepository) Delete(entity entities.Document) error {
