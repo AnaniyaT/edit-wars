@@ -45,3 +45,12 @@ func (d *DocumentService) GetCharacters(documentId uuid.UUID) ([]entities.Charac
 func (d *DocumentService) Exists(id uuid.UUID) (bool, error) {
 	return d.documentRepository.Exists(id)
 }
+
+func (d *DocumentService) ChangeTitle(id uuid.UUID, newTitle string) error {
+	document, err := d.documentRepository.Find(id)
+	if err != nil {
+		return err
+	}
+	document.Title = newTitle
+	return d.documentRepository.Update(document)
+}
