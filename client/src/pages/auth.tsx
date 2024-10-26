@@ -8,17 +8,18 @@ import {
     CardHeader,
     CardTitle,
   } from "@/components/ui/card"
+import useAuth from "@/hooks/use-auth.ts";
 
 
 function AuthPage() {
+    const { login, register, loading } = useAuth();
+
     const onLoginSubmit = (values: any) => {
-        console.log("Login form submitted")
-        console.log(values)
+        login(values.username, values.password)
     }
 
     const onRegisterSubmit = (values: any) => {
-        console.log("Register form submitted")
-        console.log(values)
+        register(values.username, values.password)
     }
 
     return (
@@ -39,6 +40,7 @@ function AuthPage() {
                             onSubmit={(values) => onLoginSubmit(values)} 
                             title="Welcome back!"
                             submitText="Login"
+                            loading={loading}
                         />
                     </TabsContent>
                     <TabsContent value="register">
@@ -46,6 +48,7 @@ function AuthPage() {
                             onSubmit={(values) => onRegisterSubmit(values)} 
                             title="Create an account"
                             submitText="Register"
+                            loading={loading}
                         />
                     </TabsContent>
                     </Tabs>

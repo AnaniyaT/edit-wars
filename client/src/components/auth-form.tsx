@@ -13,9 +13,10 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import Loading from "@/components/ui/loading.tsx";
 
 const formSchema = z.object({
-    email: z.string().email("Invalid email address"),
+    username: z.string().min(3, "Username must be at least 3 characters"),
     password: z.string().min(8, "Password must be at least 8 characters"),
   })
 
@@ -23,13 +24,14 @@ interface AuthFormProps {
     onSubmit: (values: z.infer<typeof formSchema>) => void
     submitText?: string
     title?: string
+    loading?: boolean
 }
 
 function AuthForm(props: AuthFormProps) {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            email: "",
+            username: "",
             password: "",
         },
       })
@@ -44,12 +46,12 @@ function AuthForm(props: AuthFormProps) {
         ""}
         <FormField
           control={form.control}
-          name="email"
+          name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="john@example.com" {...field} />
+                <Input placeholder="username" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -68,7 +70,10 @@ function AuthForm(props: AuthFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit">{props.submitText ?? "Submit"}</Button>
+        <Button className="grid place-items-center" type="submit" disabled={props.loading ?? false}>
+            {props.loading ? <Loading className="h-1 w-1 bg-white"  /> :
+                props.submitText ?? "Submit"}
+        </Button>
       </form>
     </Form>
   )
