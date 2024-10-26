@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/ananiyat/edit-wars/server/internal/adapters"
@@ -13,30 +15,41 @@ import (
 
 type DocumentController struct {
 	documentService *services.DocumentService
+	middlewares     []mux.MiddlewareFunc
 }
 
-func NewDocumentController(documentService *services.DocumentService) *DocumentController {
-	return &DocumentController{documentService: documentService}
+func NewDocumentController(documentService *services.DocumentService, middlewares ...mux.MiddlewareFunc) *DocumentController {
+	return &DocumentController{documentService: documentService, middlewares: middlewares}
 }
 
 func (dc *DocumentController) RegisterRoutes(router *mux.Router) {
 	subRoute := router.PathPrefix("/documents").Subrouter()
-	subRoute.HandleFunc("", dc.handleNewDocument).Methods(http.MethodPost)
-	subRoute.HandleFunc("", dc.handleGetDocuments).Methods(http.MethodGet)
-	subRoute.HandleFunc("/{documentId}", dc.handleGetDocument).Methods(http.MethodGet)
+	subRoute.HandleFunc("", dc.handleNewDocument).Methods(http.MethodPost, http.MethodOptions)
+	subRoute.HandleFunc("", dc.handleGetDocuments).Methods(http.MethodGet, http.MethodOptions)
+	router.HandleFunc("/documents/{documentId}", dc.handleGetDocument).Methods(http.MethodGet, http.MethodOptions)
+
+	for _, middleware := range dc.middlewares {
+		subRoute.Use(middleware)
+	}
 }
 
 func (dc *DocumentController) handleGetDocuments(w http.ResponseWriter, r *http.Request) {
-	userId, err := uuid.Parse("ac83e344-2856-4ae1-a839-55d60c75fa12")
+	userId, err := adapters.GetUserId(r)
+
+	if err != nil {
+		adapters.WriteError(w, http.StatusInternalServerError, errors.New("unable to get user"))
+		return
+	}
+
 	documents, err := dc.documentService.GetDocumentsByUserId(userId)
 
 	if err != nil {
-		http.Error(w, "bruh", http.StatusBadRequest)
+		adapters.WriteError(w, http.StatusInternalServerError, errors.New("unable to fetch document"))
 		return
 	}
 
 	if err := adapters.WriteJSON(w, http.StatusOK, documents); err != nil {
-		http.Error(w, "bruh", http.StatusInternalServerError)
+		adapters.WriteError(w, http.StatusInternalServerError, errors.New("server error"))
 	}
 }
 
@@ -45,18 +58,26 @@ func (dc *DocumentController) handleNewDocument(w http.ResponseWriter, r *http.R
 	err := adapters.ReadBody(r, &request)
 
 	if err != nil {
-		http.Error(w, "Invalid Document schema", http.StatusBadRequest)
+		adapters.WriteError(w, http.StatusBadRequest, errors.New("invalid request body"))
 		return
 	}
 
-	document, err := dc.documentService.CreateDocument(request.Title, request.OwnerId)
+	userId, err := adapters.GetUserId(r)
+
+	fmt.Println("userId", userId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		adapters.WriteError(w, http.StatusInternalServerError, errors.New("unable to get user"))
+		return
+	}
+
+	document, err := dc.documentService.CreateDocument(request.Title, userId)
+	if err != nil {
+		adapters.WriteError(w, http.StatusInternalServerError, errors.New("server error"))
 		return
 	}
 
 	if err := adapters.WriteJSON(w, http.StatusCreated, document); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		adapters.WriteError(w, http.StatusInternalServerError, errors.New("server error"))
 		return
 	}
 }
@@ -64,25 +85,25 @@ func (dc *DocumentController) handleNewDocument(w http.ResponseWriter, r *http.R
 func (dc *DocumentController) handleGetDocument(w http.ResponseWriter, r *http.Request) {
 	documentId, err := uuid.Parse(mux.Vars(r)["documentId"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		adapters.WriteError(w, http.StatusBadRequest, errors.New("invalid document id"))
 		return
 	}
 
 	document, err := dc.documentService.GetDocumentById(documentId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		adapters.WriteError(w, http.StatusInternalServerError, errors.New("server error"))
 		return
 	}
 
 	characters, err := dc.documentService.GetCharacters(documentId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		adapters.WriteError(w, http.StatusInternalServerError, errors.New("server error"))
 		return
 	}
 
 	response := dtos.GetDocumentResponseDTO{Characters: characters, Document: document}
 	if err := adapters.WriteJSON(w, http.StatusOK, response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		adapters.WriteError(w, http.StatusInternalServerError, errors.New("server error"))
 		return
 	}
 }

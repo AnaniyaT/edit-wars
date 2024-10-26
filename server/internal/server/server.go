@@ -25,26 +25,28 @@ type Server struct {
 	Router      *mux.Router
 	Hub         *websocket.Hub
 	Controllers []controllers.Controller
+	Services    Services
 }
 
 func NewServer(config Config) Server {
 	services := NewServices(config)
 	wsHub := websocket.NewHub()
 
-	// http
-	documentController := controllers.NewDocumentController(services.DocumentService)
-
-	// websocket
-	wsAdapter := controllers.NewWebsocketAdapter(wsHub, services.DocumentService)
-	operationAdapter := controllers.NewOperationAdapter(wsHub, services.OperationsService)
-
+	authMiddleware := middlewares.NewAuthMiddleware(services.AuthService)
 	controllers_ := []controllers.Controller{
-		documentController,
-		wsAdapter,
-		operationAdapter,
+		//http
+		controllers.NewHealthController(services.AuthService),
+		controllers.NewAuthController(services.AuthService),
+		controllers.NewDocumentController(services.DocumentService, authMiddleware.MiddlewareFunc),
+		controllers.NewOperationController(services.OperationsService, authMiddleware.MiddlewareFunc),
+
+		//websocket
+		controllers.NewWebsocketAdapter(wsHub, services.DocumentService, services.AuthService),
+		controllers.NewOperationAdapter(wsHub, services.OperationsService),
+		controllers.NewUpdatesAdapter(wsHub, services.UserService, services.DocumentService),
 	}
 
-	return Server{Port: config.Port, Router: mux.NewRouter(), Controllers: controllers_, Hub: wsHub}
+	return Server{Port: config.Port, Router: mux.NewRouter(), Controllers: controllers_, Hub: wsHub, Services: services}
 }
 
 func (s *Server) RegisterRoutes() {
@@ -54,6 +56,7 @@ func (s *Server) RegisterRoutes() {
 }
 
 func (s *Server) RegisterMiddlewares() {
+	s.Router.Use(middlewares.EnableCors)
 	s.Router.Use(middlewares.LoggingMiddleware)
 }
 
@@ -88,22 +91,32 @@ func NewConfig(port, dsn string) Config {
 type Services struct {
 	DocumentService   *services.DocumentService
 	OperationsService *services.OperationService
+	AuthService       *services.AuthService
+	UserService       *services.UserService
 }
 
 func NewServices(config Config) Services {
 	documentDb := database.NewPostgresDB[entities.Document](config.DB)
 	characterDb := database.NewPostgresDB[entities.Character](config.DB)
 	operationDb := database.NewPostgresDB[entities.Operation](config.DB)
+	userCredentialDb := database.NewPostgresDB[entities.UserCredential](config.DB)
+	userDb := database.NewPostgresDB[entities.User](config.DB)
 
 	characterRepo := repositories.NewPgCharacterRepository(characterDb)
 	operationRepo := repositories.NewPgOperationRepository(operationDb)
 	documentRepo := repositories.NewPgDocumentRepository(documentDb)
+	credentialRepo := repositories.NewPgUserCredentialRepository(userCredentialDb)
+	userRepo := repositories.NewPgUserRepository(userDb)
 
 	documentService := services.NewDocumentService(documentRepo, characterRepo)
 	operationsService := services.NewOperationService(operationRepo, characterRepo)
+	authService := services.NewAuthService(userRepo, credentialRepo)
+	userService := services.NewUserService(userRepo)
 
 	return Services{
 		DocumentService:   documentService,
 		OperationsService: operationsService,
+		AuthService:       authService,
+		UserService:       userService,
 	}
 }

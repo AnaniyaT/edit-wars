@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+	"github.com/ananiyat/edit-wars/server/internal/adapters"
 	"github.com/ananiyat/edit-wars/server/internal/adapters/dtos"
 	"github.com/ananiyat/edit-wars/server/internal/application/services"
 	"net/http"
@@ -15,10 +17,11 @@ import (
 type WebsocketAdapter struct {
 	hub             *websocket.Hub
 	documentService *services.DocumentService
+	authService     *services.AuthService
 }
 
-func NewWebsocketAdapter(hub *websocket.Hub, ds *services.DocumentService) *WebsocketAdapter {
-	return &WebsocketAdapter{hub: hub, documentService: ds}
+func NewWebsocketAdapter(hub *websocket.Hub, ds *services.DocumentService, as *services.AuthService) *WebsocketAdapter {
+	return &WebsocketAdapter{hub: hub, documentService: ds, authService: as}
 }
 
 func (ws *WebsocketAdapter) RegisterRoutes(router *mux.Router) {
@@ -26,8 +29,8 @@ func (ws *WebsocketAdapter) RegisterRoutes(router *mux.Router) {
 }
 
 func (ws *WebsocketAdapter) WebsocketConnectHandler(w http.ResponseWriter, r *http.Request) {
-	req, err := parseQueryParams(r.URL.Query())
-
+	req, err := parseWSQueryParams(r.URL.Query(), ws.authService)
+	fmt.Println(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -38,20 +41,28 @@ func (ws *WebsocketAdapter) WebsocketConnectHandler(w http.ResponseWriter, r *ht
 		http.Error(w, "Document does not exist", http.StatusNotFound)
 	}
 
-	websocket.ServeWs(ws.hub, req.ClientId, req.DocumentId, w, r)
+	websocket.ServeWs(ws.hub, req.ClientId, req.DocumentId, req.UserId, w, r)
 }
 
-func validateToken(token string) (uuid.UUID, error) {
-	return uuid.Parse(token)
+func validateToken(token string, service *services.AuthService) (uuid.UUID, error) {
+	authDto, err := adapters.DecodeAuthHeader("Basic " + token)
+	if err != nil {
+		fmt.Println(err.Error())
+		return uuid.Nil, err
+	}
+
+	userId, err := service.Authenticate(authDto.Username, authDto.Password)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return userId, nil
 }
 
-func parseQueryParams(params url.Values) (dtos.WsConnectionDto, error) {
+func parseWSQueryParams(params url.Values, service *services.AuthService) (dtos.WsConnectionDto, error) {
 	var res dtos.WsConnectionDto
 	token := params.Get("tkn")
-	userId, err := validateToken(token)
-	if err != nil {
-		return res, err
-	}
+	userId, err := validateToken(token, service)
 
 	clientId, err := uuid.Parse(params.Get("cid"))
 	if err != nil {
