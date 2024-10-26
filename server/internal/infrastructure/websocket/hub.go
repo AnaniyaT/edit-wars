@@ -2,26 +2,33 @@ package websocket
 
 import (
 	"encoding/json"
-	"log"
-	"net/http"
-
+	"fmt"
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 )
 
 type Message struct {
-	TopicId uuid.UUID
-	Data    []byte
+	TopicId  uuid.UUID
+	ClientId uuid.UUID
+	UserId   uuid.UUID
+	Data     []byte
 }
 
-type WSMessage struct {
-	Type string      `json:"type"`
-	Data interface{} `json:"data"`
+type WSMessage[T any] struct {
+	Type string `json:"type"`
+	Data T      `json:"data"`
 }
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
+func CreateResponseMessage(message Message, data interface{}) (Message, error) {
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return Message{}, err
+	}
+	return Message{
+		TopicId:  message.TopicId,
+		ClientId: message.ClientId,
+		UserId:   message.UserId,
+		Data:     bytes,
+	}, nil
 }
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -29,9 +36,6 @@ var upgrader = websocket.Upgrader{
 type Hub struct {
 	// Registered clients.
 	topics map[uuid.UUID]map[*Client]bool
-
-	// Inbound messages from the clients.
-	onMessage chan *Message
 
 	// OnMessageHandler is a function that is called when a message is received.
 	onMessageHandlers map[string]func(message Message)
@@ -52,7 +56,6 @@ func NewHub() *Hub {
 
 	return &Hub{
 		broadcast:         make(chan *Message),
-		onMessage:         make(chan *Message),
 		onMessageHandlers: messageHandlers,
 		register:          make(chan *Client),
 		unregister:        make(chan *Client),
@@ -63,7 +66,9 @@ func NewHub() *Hub {
 // For users of the api, pushes the message to the queue
 
 func (h *Hub) Broadcast(message Message) {
+	fmt.Println("broadcast called")
 	h.broadcast <- &message
+	fmt.Println("broadcast message sent")
 }
 
 // Register a message handler func to a message type
@@ -72,6 +77,9 @@ func (h *Hub) OnMessage(messageType string, handler func(message Message)) {
 }
 
 func (h *Hub) registerClient(client *Client) {
+	if _, ok := h.topics[client.topicId]; !ok {
+		h.topics[client.topicId] = make(map[*Client]bool)
+	}
 	h.topics[client.topicId][client] = true
 }
 
@@ -91,35 +99,23 @@ func (h *Hub) unregisterClient(client *Client) {
 
 // internal use, actually broadcasts
 func (h *Hub) broadcastMessage(message Message) {
+	fmt.Println("broadcasting message")
 	clients, ok := h.topics[message.TopicId]
+
 	if !ok {
 		return
 	}
 
+	fmt.Println("found", len(clients), "clients")
 	for client := range clients {
 		select {
 		case client.send <- message.Data:
 		default: // if client can't receive message, remove it
 			close(client.send)
 			delete(clients, client)
+			client.conn.Close()
 		}
 	}
-}
-
-func (h *Hub) dispatchMessageHandler(message Message) {
-	var wsMessage WSMessage
-	err := json.Unmarshal(message.Data, &wsMessage)
-	if err != nil {
-		h.onMessageHandlers["default"](message)
-		return
-	}
-	handler, ok := h.onMessageHandlers[wsMessage.Type]
-	if !ok {
-		h.onMessageHandlers["default"](message)
-		return
-	}
-
-	handler(message)
 }
 
 func (h *Hub) Run() {
@@ -131,28 +127,8 @@ func (h *Hub) Run() {
 		case client := <-h.unregister:
 			h.unregisterClient(client)
 
-		case message := <-h.onMessage:
-			h.dispatchMessageHandler(*message)
-
 		case message := <-h.broadcast:
 			h.broadcastMessage(*message)
 		}
 	}
-}
-
-// serveWs handles websocket requests from the peer.
-func ServeWs(hub *Hub, clientId uuid.UUID, topicId uuid.UUID, w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	client := &Client{Id: clientId, hub: hub, conn: conn, send: make(chan []byte, 256), topicId: topicId}
-	client.hub.register <- client
-
-	// Allow collection of memory referenced by the caller by doing all work in
-	// new goroutines.
-	go client.WritePump()
-	go client.ReadPump()
 }

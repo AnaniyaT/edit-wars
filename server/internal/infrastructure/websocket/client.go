@@ -2,7 +2,10 @@ package websocket
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,13 +23,14 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 
 	// Maximum message size allowed from peer.
-	maxMessageSize = 512
+	maxMessageSize = 4096
 )
 
-var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
-)
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin:     func(r *http.Request) bool { return true },
+}
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
@@ -39,8 +43,29 @@ type Client struct {
 
 	topicId uuid.UUID
 
+	userId uuid.UUID
+
 	// Buffered channel of outbound messages.
 	send chan []byte
+}
+
+func (c *Client) dispatchMessageHandler(message Message) {
+	fmt.Println("dispatching message handler")
+	var wsMessage WSMessage[any]
+	err := json.Unmarshal(message.Data, &wsMessage)
+	if err != nil {
+		log.Printf("Error unmarshalling message: %v", err)
+		c.hub.onMessageHandlers["default"](message)
+		return
+	}
+	handler, ok := c.hub.onMessageHandlers[wsMessage.Type]
+	if !ok {
+		log.Printf("Unknown message type: %v", wsMessage.Type)
+		c.hub.onMessageHandlers["default"](message)
+		return
+	}
+
+	handler(message)
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -48,6 +73,7 @@ type Client struct {
 // The application runs readPump in a per-connection goroutine. The application
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
+
 func (c *Client) ReadPump() {
 	defer func() {
 		c.hub.unregister <- c
@@ -68,8 +94,8 @@ func (c *Client) ReadPump() {
 			}
 			break
 		}
-		data = bytes.TrimSpace(bytes.Replace(data, newline, space, -1))
-		c.hub.onMessage <- &Message{TopicId: c.topicId, Data: data}
+		data = bytes.TrimSpace(data)
+		c.dispatchMessageHandler(Message{TopicId: c.topicId, UserId: c.userId, ClientId: c.Id, Data: data})
 	}
 }
 
@@ -100,13 +126,6 @@ func (c *Client) WritePump() {
 			}
 			w.Write(message)
 
-			// Add queued chat messages to the current websocket message.
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.send)
-			}
-
 			if err := w.Close(); err != nil {
 				return
 			}
@@ -117,4 +136,22 @@ func (c *Client) WritePump() {
 			}
 		}
 	}
+}
+
+// serveWs handles websocket requests from the peer.
+func ServeWs(hub *Hub, clientId uuid.UUID, topicId uuid.UUID, userId uuid.UUID, w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	client := &Client{Id: clientId, hub: hub, conn: conn, send: make(chan []byte, 2000), topicId: topicId, userId: userId}
+	client.hub.register <- client
+
+	// Allow collection of memory referenced by the caller by doing all work in
+	// new goroutines.
+	go client.WritePump()
+	go client.ReadPump()
+	fmt.Println("serving websocket for", clientId)
 }
