@@ -1,6 +1,5 @@
 import {
     Card,
-    CardContent,
     CardDescription,
     CardFooter,
     CardHeader,
@@ -14,11 +13,17 @@ TooltipProvider,
 TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-import Doc from "@/lib/models/document";
+import { DocumentInfo } from "@/lib/models/document.ts";
 import { BsThreeDotsVertical } from "react-icons/bs";
 
+import TimeAgo from "javascript-time-ago";
+import en from 'javascript-time-ago/locale/en'
+import {useNavigate} from "react-router-dom";
+
+TimeAgo.addLocale(en);
+
 interface DocumentListProps {
-    documents: Doc[];
+    documents: DocumentInfo[];
     className?: string;
 }
 
@@ -32,10 +37,16 @@ function DocumentList(props: DocumentListProps) {
     )
 }
 
-function DocumentItem(props: Doc) {
+function DocumentItem(props: DocumentInfo) {
+    const navigate = useNavigate();
+    const timeAgo = new TimeAgo("en-US");
+    const onClick = () => {
+        navigate({ pathname: "/editor", search: `?d=${props.id}` });
+    }
     return (
         <Card 
-            key={props.id} 
+            key={props.id}
+            onClick={onClick}
             className="
                 shadow-none hover:bg-gray-50 cursor-pointer active:scale-95
                 transition-transform duration-100 ease-in-out
@@ -44,7 +55,7 @@ function DocumentItem(props: Doc) {
             <CardHeader className="flex flex-row justify-between items-start">
                 <div>
                     <CardTitle>{props.title}</CardTitle>
-                    <CardDescription>{props.description}</CardDescription>
+                    <CardDescription>{props.ownerId}</CardDescription>
                 </div>
                 <TooltipProvider>
                     <Tooltip>
@@ -57,16 +68,8 @@ function DocumentItem(props: Doc) {
                     </Tooltip>
                 </TooltipProvider>
             </CardHeader>
-            <CardContent>
-                <p className="line-clamp-4">
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. 
-                    Quos blanditiis aspernatur sapiente non magnam id, magni optio, 
-                    officia nobis enim sequi cupiditate nam, eum beatae mollitia 
-                    deserunt fuga explicabo rerum.
-                </p>
-            </CardContent>
             <CardFooter>
-                <p className="text-sm text-gray-500">Created 2 days ago</p>
+                <p className="text-sm text-gray-500">Created {timeAgo.format(props.createdAt)}</p>
             </CardFooter>
         </Card>
     )
