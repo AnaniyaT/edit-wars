@@ -1,19 +1,23 @@
 import QuillEditor from "@/components/quill-editor.tsx";
-import {useRef} from "react";
-import { Delta } from "quill/core";
+import Session from "@/lib/adapters/session.ts";
+import useEditor from "@/hooks/use-editor.ts";
 
-function Edtitor() {
-    const quillRef = useRef(null);
-    const onTextChange = (delta: Delta) => {
-        console.log(delta.ops);
-    }
+interface EditorProps {
+    session?: Session,
+    readonly?: boolean
+}
+
+function Edtitor({ session, readonly }: EditorProps) {
+    const { quillRef, onTextChange, onSelectionChange } = useEditor(session);
+
     return (
-        <div className="p-6 h-full">
+        <div className="h-full">
             <QuillEditor
                 className="h-full text-2xl"
                 ref={quillRef}
-                readOnly={false}
+                readOnly={readonly != undefined ? readonly : false}
                 onTextChange={onTextChange}
+                onSelectionChange={onSelectionChange}
             />
         </div>
     )

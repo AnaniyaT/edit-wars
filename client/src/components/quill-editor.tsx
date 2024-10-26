@@ -1,6 +1,9 @@
 import {forwardRef, MutableRefObject, useEffect, useLayoutEffect, useRef} from 'react';
 import Quill, { Delta, EmitterSource, Range, Op } from 'quill/core';
+import QuillCursors from "quill-cursors";
 import 'quill/dist/quill.snow.css';
+
+Quill.register("modules/cursors", QuillCursors);
 
 interface QuillEditorProps {
     readOnly?: boolean;
@@ -11,7 +14,7 @@ interface QuillEditorProps {
 }
 
 // Editor is an uncontrolled React component
-const QuillEditor = forwardRef<HTMLDivElement, QuillEditorProps>(
+const QuillEditor = forwardRef<Quill, QuillEditorProps>(
     ({ readOnly, defaultValue, onTextChange, onSelectionChange, className }, ref) => {
         const containerRef = useRef<HTMLDivElement>(null);
         const defaultValueRef = useRef(defaultValue);
@@ -32,7 +35,12 @@ const QuillEditor = forwardRef<HTMLDivElement, QuillEditorProps>(
             const editorContainer = container?.appendChild(
                 container.ownerDocument.createElement('div'),
             );
-            const quill = new Quill(editorContainer!, {});
+            editorContainer!.style.padding = "1rem"
+            const quill = new Quill(editorContainer!, {
+                modules: {
+                    cursors: true
+                }
+            });
 
             (ref as MutableRefObject<Quill | null>).current = quill;
 
@@ -44,8 +52,11 @@ const QuillEditor = forwardRef<HTMLDivElement, QuillEditorProps>(
                 onTextChangeRef.current?.(...args);
             });
 
-            quill.on(Quill.events.SELECTION_CHANGE, (...args) => {
-                onSelectionChangeRef.current?.(...args);
+            quill.on(Quill.events.EDITOR_CHANGE, (eventName, ...args) => {
+                if (eventName === Quill.events.SELECTION_CHANGE) {
+                    console.log("jfkdsfjskfjlskdjfl")
+                    onSelectionChangeRef.current?.(...args as [Range, Range, EmitterSource]);
+                }
             });
 
             return () => {
