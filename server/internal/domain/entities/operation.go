@@ -17,15 +17,15 @@ type Operation struct {
 	Type       OperationType  `json:"type"`
 	DocumentId uuid.UUID      `json:"documentId"`
 	ChrId      uuid.UUID      `json:"chrId"`
-	Value      rune           `json:"value"`
+	Value      string         `json:"value"`
 	ClientId   uuid.UUID      `json:"clientId"`
-	Position   types.Position `json:"position"`
+	Position   types.Position `json:"position" bun:",array"`
 	Counter    int            `json:"counter"`
 }
 
 func NewOperation(
 	chrId, clientId, documentId uuid.UUID,
-	value rune, position types.Position,
+	value string, position types.Position,
 	operationType OperationType, counter int) Operation {
 	return Operation{
 		Type:     operationType,

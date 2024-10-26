@@ -9,11 +9,11 @@ import (
 type Character struct {
 	Id         uuid.UUID      `json:"id" bun:",pk"`
 	DocumentId uuid.UUID      `json:"documentId"`
-	Position   types.Position `json:"position"`
-	Value      rune           `json:"value"`
+	Position   types.Position `json:"position" bun:",array"`
+	Value      string         `json:"value"`
 }
 
-func NewCharacter(id, documentId uuid.UUID, position types.Position, value rune) Character {
+func NewCharacter(id, documentId uuid.UUID, position types.Position, value string) Character {
 	return Character{
 		Id:         id,
 		DocumentId: documentId,
