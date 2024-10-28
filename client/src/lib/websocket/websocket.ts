@@ -120,6 +120,7 @@ class WSConnection {
     // Close the WebSocket connection
     close() {
         this.stopQueue();
+        this.ws.onclose = () => {}
         this.ws.close();
         this.listening = false;
         this.queueIntervalId = undefined;
@@ -150,6 +151,7 @@ class WSConnection {
                 }
                 clearInterval(intervalId);
             } else {
+                this.ws.close()
                 this.ws = new WebSocket(this.ws.url);
                 this.setupWs();
                 if (this.listening) {
