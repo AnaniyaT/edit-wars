@@ -4,22 +4,20 @@ services:
       - .env
     image: postgres
     container_name: postgres_db
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
     networks:
       - network
 
   client:
     env_file:
       - .env
-    build: client
+    build:
+      context: client
+      args:
+        - VITE_SERVER_BASE_URL=${SERVER_BASE_URL}
+        - VITE_SSL=${SSL}
+    image: ${DOCKER_REGISTRY}/edit-wars-client:latest
     ports:
       - "3000:3000"
-    environment:
-      - VITE_SERVER_BASE_URL=${VITE_SERVER_BASE_URL}
-      - VITE_SSL=${VITE_SSL}
 
   server:
     env_file:
@@ -27,10 +25,9 @@ services:
     depends_on:
       - postgres
     build: server
+    image: ${DOCKER_REGISTRY}/edit-wars-server:latest
     ports:
       - "8080:8080"
-    environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
     networks:
       - network
 
