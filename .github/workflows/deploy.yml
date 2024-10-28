@@ -16,7 +16,8 @@ jobs:
         uses: SpicyPizza/create-envfile@v2.0
         with:
             envkey_VITE_SERVER_BASE_URL: ${{ vars.SERVER_URL }}
-            envkey_VITE_SSL: $ {{ vars.SSL }}
+            envkey_VITE_SSL: ${{ vars.SSL }}
+            envkey_DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY }}
             file_name: .env
             fail_on_empty: false
             sort_keys: false
@@ -26,7 +27,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: ${{ vars.DOCKER_REGISTRY_URL }}
+          registry: https://${{ vars.DOCKER_REGISTRY }}
 
       # Build and push the Docker image
       - name: Build and Push Docker Image
