@@ -17,6 +17,9 @@ services:
     build: client
     ports:
       - "3000:3000"
+    environment:
+      - VITE_SERVER_BASE_URL=${VITE_SERVER_BASE_URL}
+      - VITE_SSL=${VITE_SSL}
 
   server:
     env_file:
