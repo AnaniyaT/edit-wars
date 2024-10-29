@@ -64,7 +64,7 @@ jobs:
             sort_keys: false
 
       - name: Copy .env file
-        run: scp -o StrictHostKeyChecking=yes docker-compose.yml ${{ secrets.USER }}@${{ secrets.HOST }}:${{ vars.APP_DIR }}/.env
+        run: scp -o StrictHostKeyChecking=yes .env ${{ secrets.USER }}@${{ secrets.HOST }}:${{ vars.APP_DIR }}
       
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
