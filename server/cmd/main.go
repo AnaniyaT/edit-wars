@@ -3,8 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ananiyat/edit-wars/server/cmd/migrations"
 	"os"
+
+	"github.com/ananiyat/edit-wars/server/cmd/migrations"
 
 	"github.com/ananiyat/edit-wars/server/internal/server"
 	"github.com/joho/godotenv"
@@ -14,6 +15,9 @@ func main() {
 	godotenv.Load()
 
 	defaultDsn := os.Getenv("DATABASE_URL")
+	if defaultDsn == "" {
+		defaultDsn = getDsn()
+	}
 	port := flag.String("port", "8080", "Port to run the server on")
 	dsn := flag.String("dsn", defaultDsn, "Data source name for the database")
 
@@ -22,14 +26,14 @@ func main() {
 
 	flag.Parse()
 
-	if migrate == true {
-		migrations.Migrate()
-		fmt.Println("migrated successfully... exiting...")
-		return
-	}
-
 	if *dsn == "" {
 		panic("DSN is required")
+	}
+
+	if migrate {
+		migrations.Migrate(*dsn)
+		fmt.Println("migrated successfully... exiting...")
+		return
 	}
 
 	config := server.NewConfig(*port, *dsn)
@@ -38,4 +42,25 @@ func main() {
 	server.RegisterMiddlewares()
 	server.RegisterRoutes()
 	server.Start()
+}
+
+func getDsn() string {
+	user := os.Getenv("POSTGRES_USER")
+	password := os.Getenv("POSTGRES_PASSWORD")
+	db := os.Getenv("POSTGRES_DB")
+	port := os.Getenv("POSTGRES_PORT")
+	if port == "" {
+		port = "5432"
+	}
+	host := os.Getenv("POSTGRES_HOST")
+	if host == "" {
+		host = "postgres"
+	}
+	if user == "" || password == "" || db == "" {
+		return ""
+	}
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		user, password, host, port, db)
+	return dsn
 }

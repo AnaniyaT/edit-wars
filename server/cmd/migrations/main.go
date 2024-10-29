@@ -5,24 +5,20 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
-	"github.com/joho/godotenv"
+
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
 	"github.com/uptrace/bun/extra/bundebug"
 	"github.com/uptrace/bun/migrate"
-	"os"
 )
 
 //go:embed *.sql
 var migrationFiles embed.FS
 
-func Migrate() {
-	godotenv.Load()
-	dsn := os.Getenv("DATABASE_URL")
-
+func Migrate(dsn string) {
 	if dsn == "" {
-		panic("DATABASE_URL environment variable not set")
+		panic("DSN required")
 	}
 
 	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
