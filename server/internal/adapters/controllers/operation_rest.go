@@ -5,10 +5,12 @@ import (
 	"github.com/ananiyat/edit-wars/server/internal/adapters"
 	"github.com/ananiyat/edit-wars/server/internal/adapters/dtos"
 	"github.com/ananiyat/edit-wars/server/internal/application/services"
+	"github.com/ananiyat/edit-wars/server/internal/domain/entities"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 )
 
@@ -38,8 +40,8 @@ func (oc *OperationController) handleGetOperations(w http.ResponseWriter, r *htt
 		return
 	}
 
-	operations, err := oc.operationService.FilterOperations(
-		params.DocumentId, params.ClientId, params.Counter,
+	operations, err := oc.operationService.Find(
+		params.DocumentId, params.ClientId, params.Counter, params.Type,
 	)
 
 	if err != nil {
@@ -64,10 +66,14 @@ func parseOpQueryParams(params url.Values) (dtos.GetOperationsDto, error) {
 	if err == nil {
 		req.ClientId = &clientId
 	}
-
 	counter, err := strconv.Atoi(params.Get("ctrgeq"))
 	if err == nil {
 		req.Counter = &counter
+	}
+	if slices.Contains([]string{string(entities.OperationTypeInsert),
+		string(entities.OperationTypeDelete)}, params.Get("type")) {
+		opType := entities.OperationType(params.Get("type"))
+		req.Type = &opType
 	}
 
 	return req, nil

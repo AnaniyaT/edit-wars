@@ -3,6 +3,7 @@ package repositories
 import (
 	"github.com/ananiyat/edit-wars/server/internal/domain/entities"
 	"github.com/ananiyat/edit-wars/server/internal/infrastructure/database"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -16,7 +17,7 @@ func NewPgOperationRepository(db database.Database[entities.Operation]) *PgOpera
 }
 
 func (o *PgOperationRepository) FindOne(clientId uuid.UUID, counter int) (entities.Operation, error) {
-	return o.db.FindOne("client_id = ?, counter = ?", clientId, counter)
+	return o.db.FindOne("client_id = ? AND counter = ?", clientId, counter)
 }
 
 func (o *PgOperationRepository) FindByClientId(clientId uuid.UUID) ([]entities.Operation, error) {
@@ -27,13 +28,25 @@ func (o *PgOperationRepository) FindByDocumentId(documentId uuid.UUID) ([]entiti
 	return o.db.Find("document_id = ?", documentId)
 }
 
-func (o *PgOperationRepository) FindByDocumentAndClientIds(documentId uuid.UUID, clientId uuid.UUID) ([]entities.Operation, error) {
-	return o.db.Find("client_id = ?, document_id = ?", clientId, documentId)
-}
+func (o *PgOperationRepository) Find(documentId uuid.UUID, clientId *uuid.UUID,
+	counter *int, operationType *entities.OperationType) ([]entities.Operation, error) {
+	columns := []string{"document_id = ?"}
+	values := []interface{}{documentId}
+	if clientId != nil && *clientId != uuid.Nil {
+		columns = append(columns, "client_id = ?")
+		values = append(values, *clientId)
+	}
+	if counter != nil {
+		columns = append(columns, "counter >= ?")
+		values = append(values, *counter)
+	}
+	if operationType != nil {
+		columns = append(columns, "type = ?")
+		values = append(values, *operationType)
+	}
 
-// Returns all operations of a client with a counter greater than or equal to the given counter.
-func (o *PgOperationRepository) FindGeqCounter(clientId uuid.UUID, documentId uuid.UUID, counter int) ([]entities.Operation, error) {
-	return o.db.Find("client_id = ?, document_id = ?, counter >= ?", clientId, documentId, counter)
+	fmtdColumns := strings.Join(columns, " AND ")
+	return o.db.Find(fmtdColumns, values...)
 }
 
 func (o *PgOperationRepository) FindAll() ([]entities.Operation, error) {

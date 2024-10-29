@@ -23,49 +23,9 @@ func NewOperationService(
 	}
 }
 
-func (o *OperationService) GetOperationsByClientId(clientId uuid.UUID) ([]entities.Operation, error) {
-	return o.operationRepository.FindByClientId(clientId)
-}
-
-func (o *OperationService) GetOperationsByDocumentAndClientIds(
-	documentId uuid.UUID, clientId uuid.UUID) ([]entities.Operation, error) {
-	return o.operationRepository.FindByDocumentAndClientIds(documentId, clientId)
-}
-
-func (o *OperationService) GetOperationsByClientIdAndCounter(
-	clientId uuid.UUID, documentId uuid.UUID, counter int) ([]entities.Operation, error) {
-	return o.operationRepository.FindGeqCounter(clientId, documentId, counter)
-}
-
-func (o *OperationService) GetOperationsByDocumentId(documentId uuid.UUID) ([]entities.Operation, error) {
-	return o.operationRepository.FindByDocumentId(documentId)
-}
-
-func (o *OperationService) FilterOperations(documentId uuid.UUID, clientId *uuid.UUID, counter *int) ([]entities.Operation, error) {
-	var response []entities.Operation
-
-	if clientId == nil {
-		operations, err := o.GetOperationsByDocumentId(documentId)
-		if err != nil {
-			return response, err
-		}
-		response = operations
-	} else if counter == nil {
-		operations, err := o.GetOperationsByDocumentAndClientIds(documentId, *clientId)
-		if err != nil {
-			return response, err
-		}
-		response = operations
-	} else {
-		operations, err := o.GetOperationsByClientIdAndCounter(
-			*clientId, documentId, *counter)
-		if err != nil {
-			return response, err
-		}
-		response = operations
-	}
-
-	return response, nil
+func (o *OperationService) Find(documentId uuid.UUID, clientId *uuid.UUID, counter *int,
+	operationType *entities.OperationType) ([]entities.Operation, error) {
+	return o.operationRepository.Find(documentId, clientId, counter, operationType)
 }
 
 func (o *OperationService) ApplyAndSave(operation entities.Operation) error {

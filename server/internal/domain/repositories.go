@@ -10,8 +10,8 @@ type OperationRepository interface {
 	FindOne(clientId uuid.UUID, counter int) (entities.Operation, error)
 	FindByClientId(clientId uuid.UUID) ([]entities.Operation, error)
 	FindByDocumentId(documentId uuid.UUID) ([]entities.Operation, error)
-	FindByDocumentAndClientIds(documentId uuid.UUID, clientId uuid.UUID) ([]entities.Operation, error)
-	FindGeqCounter(clientId uuid.UUID, documentId uuid.UUID, counter int) ([]entities.Operation, error)
+	Find(documentId uuid.UUID, clientId *uuid.UUID, counter *int,
+		operationType *entities.OperationType) ([]entities.Operation, error)
 	FindAll() ([]entities.Operation, error)
 	Save(operation entities.Operation) error
 	SaveMany(operations []entities.Operation) error
