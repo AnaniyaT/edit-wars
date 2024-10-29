@@ -75,6 +75,7 @@ jobs:
 
       - name: Deploy
         run: |
+          ssh ${{ secrets.USER }}@${{ secrets.HOST }}
           cd ${{ vars.APP_DIR }}
           docker compose pull
           docker compose down
