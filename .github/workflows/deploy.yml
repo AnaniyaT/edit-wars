@@ -62,6 +62,8 @@ jobs:
             envkey_POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
             envkey_POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
             envkey_POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+            envkey_VITE_SERVER_BASE_URL: ${{ vars.SERVER_URL }}
+            envkey_VITE_SSL: ${{ vars.SSL }}
             envkey_DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY }}
             file_name: .env
             fail_on_empty: false

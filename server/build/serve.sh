@@ -2,7 +2,7 @@
 
 # Run migrations
 echo "Running migrations..."
-/app/build/server --migrate
+exec /app/build/server --migrate
 
 # Start the server
 echo "Starting the server..."
