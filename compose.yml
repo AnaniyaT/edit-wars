@@ -3,9 +3,9 @@ services:
     env_file:
       - .env
     image: postgres
-    container_name: postgres_db
+    container_name: postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSRGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 5s
       retries: 5
