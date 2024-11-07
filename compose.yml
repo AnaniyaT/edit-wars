@@ -6,9 +6,9 @@ services:
     container_name: postgres
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      interval: 2s
+      timeout: 2s
+      retries: 10
     networks:
       - network
 
@@ -28,7 +28,8 @@ services:
     env_file:
       - .env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     build: server
     image: ${DOCKER_REGISTRY}/edit-wars-server:latest
     ports:
