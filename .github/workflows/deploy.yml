@@ -39,6 +39,7 @@ jobs:
           docker compose push
 
   deploy:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -71,10 +72,14 @@ jobs:
 
       - name: Deploy
         run: |
-          ssh ${{ secrets.USER }}@${{ secrets.HOST }}  << 'EOF'
+          ssh ${{ secrets.USER }}@${{ secrets.HOST }} << 'EOF'
           cd ${{ vars.APP_DIR }}
           docker login https://${{ vars.DOCKER_REGISTRY }} -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker compose pull
           docker compose down
-          docker compose up
+          docker compose up -d  # Run in detached mode
+          if [ $? -ne 0 ]; then
+            echo "Docker Compose failed to start the containers"
+            exit 1  # Explicitly fail the job if the command fails
+          fi
           EOF
