@@ -7,6 +7,13 @@ import {
 } from "@/components/ui/card"
 
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+
+
+import {
 Tooltip,
 TooltipContent,
 TooltipProvider,
@@ -19,6 +26,7 @@ import { BsThreeDotsVertical } from "react-icons/bs";
 import TimeAgo from "javascript-time-ago";
 import en from 'javascript-time-ago/locale/en'
 import {useNavigate} from "react-router-dom";
+import userGetUser from "@/hooks/use-get-user.ts";
 
 TimeAgo.addLocale(en);
 
@@ -39,30 +47,45 @@ function DocumentList(props: DocumentListProps) {
 
 function DocumentItem(props: DocumentInfo) {
     const navigate = useNavigate();
+    const { user } = userGetUser(props.ownerId);
     const timeAgo = new TimeAgo("en-US");
     const onClick = () => {
         navigate({ pathname: "/editor", search: `?d=${props.id}` });
+    }
+    const onOptionsClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
     }
     return (
         <Card 
             key={props.id}
             onClick={onClick}
             className="
-                shadow-none hover:bg-gray-50 cursor-pointer active:scale-95
-                transition-transform duration-100 ease-in-out
+                shadow-none hover:bg-gray-50 cursor-pointer
                 "
             >
             <CardHeader className="flex flex-row justify-between items-start">
                 <div>
                     <CardTitle>{props.title}</CardTitle>
-                    <CardDescription>{props.ownerId}</CardDescription>
+                    <CardDescription>{user ? user.username : "Unknown user"}</CardDescription>
                 </div>
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild className="">
-                            <button className="p-1 rounded-full hover:bg-gray-100">
-                                <BsThreeDotsVertical />
-                            </button>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <button onClick={onOptionsClick} className="p-2 -mt-6 rounded-full hover:bg-gray-100">
+                                        <BsThreeDotsVertical />
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[8rem] p-0">
+                                    <button
+                                        onClick={onOptionsClick}
+                                        className="w-full text-left px-4 py-4 hover:bg-gray-100 active:scale-95 transition-transform"
+                                    >
+                                        Delete
+                                    </button>
+                                </PopoverContent>
+                            </Popover>
                         </TooltipTrigger>
                         <TooltipContent side="top">Options</TooltipContent>
                     </Tooltip>

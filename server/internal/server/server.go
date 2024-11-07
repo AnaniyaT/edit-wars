@@ -39,6 +39,7 @@ func NewServer(config Config) Server {
 		controllers.NewAuthController(services.AuthService),
 		controllers.NewDocumentController(services.DocumentService, authMiddleware.MiddlewareFunc),
 		controllers.NewOperationController(services.OperationsService, authMiddleware.MiddlewareFunc),
+		controllers.NewUserController(services.UserService),
 
 		//websocket
 		controllers.NewWebsocketAdapter(wsHub, services.DocumentService, services.AuthService),
