@@ -54,7 +54,6 @@ const QuillEditor = forwardRef<Quill, QuillEditorProps>(
 
             quill.on(Quill.events.EDITOR_CHANGE, (eventName, ...args) => {
                 if (eventName === Quill.events.SELECTION_CHANGE) {
-                    console.log("jfkdsfjskfjlskdjfl")
                     onSelectionChangeRef.current?.(...args as [Range, Range, EmitterSource]);
                 }
             });

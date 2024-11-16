@@ -130,6 +130,7 @@ class Document {
         if (idx == -1) return -1;
         return idx - 1;
     }
+
     private applyInsert(operation: Operation): Character{
         if (operation.type != OperationType.Insert) {
             throw Error("Operation must be of type 'INSERT'")
@@ -155,10 +156,8 @@ class Document {
         switch (operation.type) {
             case OperationType.Insert:
                 return this.applyInsert(operation);
-                break;
             case OperationType.Delete:
                 return this.applyDelete(operation);
-                break;
             default:
                 throw new Error(`Unknown operation type: ${operation.type}`);
         }

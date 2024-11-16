@@ -127,7 +127,6 @@ class WSConnection {
     }
 
     private send(data: any) {
-        console.log("sending")
         this.ws.send(JSON.stringify(data))
     }
 

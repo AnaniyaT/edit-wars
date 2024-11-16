@@ -8,8 +8,8 @@ import { Operation, OperationType } from "@/lib/crdt/operation.ts";
 import Character from "@/lib/crdt/character.ts";
 import Config from "@/lib/config.ts";
 import { Queue } from "@/lib/containers/collections.ts";
-import {IncomingCursorUpdate, OutgoingCursorUpdate} from "@/lib/models/cursor-update.ts";
-import {randomColor} from "@/lib/utils.ts";
+import { IncomingCursorUpdate, OutgoingCursorUpdate } from "@/lib/models/cursor-update.ts";
+import { randomColor } from "@/lib/utils.ts";
 import TitleUpdate from "@/lib/models/title-update.ts";
 
 class Session {
@@ -56,7 +56,6 @@ class Session {
     }
 
     processCursorChange(range: Range) {
-        console.log("cursor change")
         const update = new OutgoingCursorUpdate(range.index, range.length, this.color);
         const message = new WSMessage(
             MessageType.Cursor,
@@ -188,18 +187,14 @@ class Session {
         const counter = operation.counter;
 
         if (this.versionVector.get(cid) === undefined) {
-            console.log("v vector is undefined")
             this.versionVector.set(cid, counter);
             this.applyOperation(operation);
         } else if (counter <= this.versionVector.get(cid)!) {
-            console.log("already seen this one bruv")
             return;
         } else if (counter == this.versionVector.get(cid)! + 1) {
-            console.log("now this is the kind we like")
             this.applyOperation(operation);
             this.updateVersionVector(cid, counter);
         } else {
-            console.log("this bruv is too ahead... fetching")
             await this.fetchAndApplyOperations(cid, this.versionVector.get(cid)!);
         }
     }
@@ -210,9 +205,7 @@ class Session {
     }
 
     private async fetchAndApplyOperations(clientId: string, counter: number): Promise<void> {
-        console.log("called fetch operations")
         let operations = await fetchOperations(this.document.id, clientId, counter);
-        console.log("fetchedd deez operations")
         operations = operations.sort((a, b) => a.counter - b.counter);
         let prev = counter;
         for (let op of operations) {
