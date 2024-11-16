@@ -1,13 +1,15 @@
 
-import useFetch from "@/hooks/use-fetch.ts";
+import useFetch from "@/hooks/util/use-fetch.ts";
 import { DocumentInfo } from "@/lib/models/document.ts";
 import Config from "@/lib/config.ts";
-import {useEffect} from "react";
-import {useToast} from "@/hooks/use-toast.ts";
+import {useContext, useEffect} from "react";
+import {useToast} from "@/hooks/util/use-toast.ts";
 import {useNavigate} from "react-router-dom";
+import {DocumentsContext} from "@/components/documents-provider.tsx";
 
 function useCreateDocument() {
     const url = `${Config.formattedBaseUrl()}/documents`;
+    const { addDocument } = useContext(DocumentsContext);
     const transformResponse = (res: any) => {
         return DocumentInfo.fromJson(res);
     };
@@ -31,6 +33,7 @@ function useCreateDocument() {
         }
 
         if (success) {
+            addDocument(data!)
             navigate(`/editor?d=${data!.id}`);
         }
     }, [isError, success]);

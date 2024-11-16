@@ -26,10 +26,10 @@ function useFetch<T>(url: string, fetchInitially?: boolean, transformResponse?: 
         try {
             const response = await fetch(url, fetchOptions);
             if (!response.ok) {
-                console.log("bruv")
                 throw new Error((await response.json()).message);
             }
-            const json = await response.json();
+
+            const json = response.status != 204 ? await response.json() : null;
             setSuccess(true);
             const obj = !!transformResponse ? transformResponse(json) : json;
             setData(obj);
@@ -37,7 +37,6 @@ function useFetch<T>(url: string, fetchInitially?: boolean, transformResponse?: 
             setIsLoading(false)
             return obj;
         } catch (e) {
-            console.log("error caught")
             setSuccess(false);
             setIsLoading(false);
             setIsError(true);

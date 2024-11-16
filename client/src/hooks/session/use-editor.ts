@@ -32,7 +32,6 @@ function useEditor(session: Session | undefined) {
         })
 
         session.onIncomingCursor((cursor) => {
-            console.log("cursor", cursor)
             cursors.createCursor(cursor.clientId, cursor.username, cursor.color)
             cursors.moveCursor(cursor.clientId, { index: cursor.start, length: cursor.length })
         })

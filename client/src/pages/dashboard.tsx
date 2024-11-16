@@ -9,9 +9,9 @@ import {
 import { FaPlus } from "react-icons/fa";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import useGetDocuments from "@/hooks/use-get-documents.ts";
+import useGetDocuments from "@/hooks/document/use-get-documents.ts";
 import Loading from "@/components/ui/loading.tsx";
-import useCreateDocument from "@/hooks/use-create-document.ts";
+import useCreateDocument from "@/hooks/document/use-create-document.ts";
 
 
 
@@ -37,7 +37,7 @@ function DashboardPage() {
                 )
             }
             {
-                documents && (
+                documents.length > 0 && (
                     <ScrollArea className="h-full">
                         <div className="w-full h-[calc(100%-5rem)] flex flex-col px-2 md:px-8 py-8">
                             <TooltipProvider>

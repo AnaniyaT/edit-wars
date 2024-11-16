@@ -1,8 +1,8 @@
 import Config from "@/lib/config.ts";
-import useFetch from "@/hooks/use-fetch.ts";
+import useFetch from "@/hooks/util/use-fetch.ts";
 import {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
-import {useToast} from "@/hooks/use-toast.ts";
+import {useToast} from "@/hooks/util/use-toast.ts";
 
 export function formatAuthHeader(username: string, password: string): string {
     const formatted = `${username}:${password}`;

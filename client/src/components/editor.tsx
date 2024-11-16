@@ -1,13 +1,13 @@
 import QuillEditor from "@/components/quill-editor.tsx";
 import Session from "@/lib/adapters/session.ts";
-import useEditor from "@/hooks/use-editor.ts";
+import useEditor from "@/hooks/session/use-editor.ts";
 
 interface EditorProps {
     session?: Session,
     readonly?: boolean
 }
 
-function Edtitor({ session, readonly }: EditorProps) {
+function Editor({ session, readonly }: EditorProps) {
     const { quillRef, onTextChange, onSelectionChange } = useEditor(session);
 
     return (
@@ -23,4 +23,4 @@ function Edtitor({ session, readonly }: EditorProps) {
     )
 }
 
-export default Edtitor;
+export default Editor;

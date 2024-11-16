@@ -1,5 +1,5 @@
 import Loading from "@/components/ui/loading.tsx";
-import useAuthRedirect from "@/hooks/use-auth-redirect.ts";
+import useAuthRedirect from "@/hooks/auth/use-auth-redirect.ts";
 
 function IndexPage() {
     const {} = useAuthRedirect();

@@ -8,7 +8,7 @@ import {
     CardHeader,
     CardTitle,
   } from "@/components/ui/card"
-import useAuth from "@/hooks/use-auth.ts";
+import useAuth from "@/hooks/auth/use-auth.ts";
 
 
 function AuthPage() {

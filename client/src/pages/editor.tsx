@@ -1,6 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 import Editor from "@/components/editor.tsx";
-import useSession from "@/hooks/use-session.ts";
+import useSession from "@/hooks/session/use-session.ts";
 import {Tooltip, TooltipProvider, TooltipTrigger, TooltipContent} from "@/components/ui/tooltip.tsx";
 import Loading from "@/components/ui/loading.tsx";
 import {useSearchParams} from "react-router-dom";

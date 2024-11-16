@@ -1,5 +1,5 @@
 import Config from "@/lib/config.ts";
-import useFetch from "@/hooks/use-fetch.ts";
+import useFetch from "@/hooks/util/use-fetch.ts";
 import {useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 

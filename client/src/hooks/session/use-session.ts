@@ -1,10 +1,11 @@
-import {useEffect, useRef, useState} from "react";
+import {useContext, useEffect, useRef, useState} from "react";
 import Session from "@/lib/adapters/session.ts";
-import {useToast} from "@/hooks/use-toast.ts";
-import useFetch from "@/hooks/use-fetch.ts";
+import {useToast} from "@/hooks/util/use-toast.ts";
+import useFetch from "@/hooks/util/use-fetch.ts";
 import { DocumentResponse } from "@/lib/models/document.ts";
 import Config from "@/lib/config.ts";
 import {useNavigate} from "react-router-dom";
+import {DocumentsContext} from "@/components/documents-provider.tsx";
 
 
 function useSession(documentId: string) {
@@ -12,13 +13,19 @@ function useSession(documentId: string) {
     const sessionRef = useRef<Session>();
     const changeTitleTimeout = useRef<NodeJS.Timeout>();
     const navigate = useNavigate();
+    const { updateTitle: ut } = useContext(DocumentsContext);
 
     const [connected, setConnected] = useState<boolean>(false);
     const [connecting, setConnecting] = useState<boolean>(true);
-    const [title, setTitle] = useState<string>("Funny Title, pretend to laugh");
+    const [title, setTitle] = useState<string>("");
 
     const { query, loading, isError, success, error } = useFetch<DocumentResponse>(url, false, DocumentResponse.fromJson);
     const { toast } = useToast()
+
+    const updateTitle = (newTitle: string) => {
+        ut(documentId, newTitle);
+        setTitle(newTitle);
+    };
 
     const onConnectionChange = (connected: boolean) => {
         setConnected(connected);
@@ -38,7 +45,7 @@ function useSession(documentId: string) {
     }
 
     const changeTitle = (newTitle: string) => {
-        setTitle(newTitle);
+        updateTitle(newTitle);
         if (changeTitleTimeout.current) {
             clearTimeout(changeTitleTimeout.current);
         }
@@ -56,14 +63,16 @@ function useSession(documentId: string) {
             sessionRef.current.onConnectionChange(onConnectionChange);
             sessionRef.current.onConnectingChange(onConnectingChange);
             sessionRef.current.onDisconnected(onDisconnect);
-            sessionRef.current.onIncomingTitle((title) => {setTitle(title)})
             query().then((document) => {
                 if (!document) return;
-                setTitle(document.document.title);
+                updateTitle(document.document.title);
                 const delta = sessionRef.current!.addCharacters(document.characters);
                 sessionRef.current!.initialDelta = delta;
             });
         }
+        sessionRef.current.onIncomingTitle((title) => {
+            updateTitle(title);
+        })
         sessionRef.current.connect();
 
         return () => {
@@ -76,6 +85,9 @@ function useSession(documentId: string) {
         if (isError) {
             if ((error as any)?.status_code === 401) {
                 navigate("/auth")
+            }
+            if ((error as any)?.status_code === 404) {
+                navigate("/404")
             }
         }
     }, [isError]);
