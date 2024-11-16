@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/ananiyat/edit-wars/server/cmd/migrations"
@@ -31,8 +32,12 @@ func main() {
 	}
 
 	if migrate {
-		migrations.Migrate(*dsn)
-		fmt.Println("migrated successfully... exiting...")
+		err := migrations.Migrate(*dsn)
+		if err != nil {
+			log.Fatal("migration failed... exiting...")
+		} else {
+			log.Println("migrated successfully... exiting...")
+		}
 		return
 	}
 
