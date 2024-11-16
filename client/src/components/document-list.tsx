@@ -12,13 +12,18 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 
-
 import {
-Tooltip,
-TooltipContent,
-TooltipProvider,
-TooltipTrigger,
-} from "@/components/ui/tooltip"
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 
 import { DocumentInfo } from "@/lib/models/document.ts";
 import { BsThreeDotsVertical } from "react-icons/bs";
@@ -26,7 +31,8 @@ import { BsThreeDotsVertical } from "react-icons/bs";
 import TimeAgo from "javascript-time-ago";
 import en from 'javascript-time-ago/locale/en'
 import {useNavigate} from "react-router-dom";
-import userGetUser from "@/hooks/use-get-user.ts";
+import userGetUser from "@/hooks/user/use-get-user.ts";
+import useDeleteDocument from "@/hooks/document/use-delete-document.ts";
 
 TimeAgo.addLocale(en);
 
@@ -35,7 +41,7 @@ interface DocumentListProps {
     className?: string;
 }
 
-function DocumentList(props: DocumentListProps) {
+export default function DocumentList(props: DocumentListProps) {
     return (
         <div className="my-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {props.documents.map((doc) => (
@@ -48,48 +54,40 @@ function DocumentList(props: DocumentListProps) {
 function DocumentItem(props: DocumentInfo) {
     const navigate = useNavigate();
     const { user } = userGetUser(props.ownerId);
+    const { deleteDocument, loading: deleteLoading } = useDeleteDocument(props.id)
     const timeAgo = new TimeAgo("en-US");
     const onClick = () => {
         navigate({ pathname: "/editor", search: `?d=${props.id}` });
     }
-    const onOptionsClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-    }
+
     return (
         <Card 
             key={props.id}
             onClick={onClick}
-            className="
-                shadow-none hover:bg-gray-50 cursor-pointer
-                "
+            className={
+                "shadow-none hover:bg-gray-50 cursor-pointer relative"
+                + (deleteLoading ? " opacity-50 pointer-events-none cursor-not-allowed" : "")
+            }
             >
             <CardHeader className="flex flex-row justify-between items-start">
                 <div>
                     <CardTitle>{props.title}</CardTitle>
-                    <CardDescription>{user ? user.username : "Unknown user"}</CardDescription>
+                    <CardDescription>{user ? "@" + user.username : ""}</CardDescription>
                 </div>
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild className="">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <button onClick={onOptionsClick} className="p-2 -mt-6 rounded-full hover:bg-gray-100">
-                                        <BsThreeDotsVertical />
-                                    </button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[8rem] p-0">
-                                    <button
-                                        onClick={onOptionsClick}
-                                        className="w-full text-left px-4 py-4 hover:bg-gray-100 active:scale-95 transition-transform"
-                                    >
-                                        Delete
-                                    </button>
-                                </PopoverContent>
-                            </Popover>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">Options</TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                <Popover>
+                    <PopoverTrigger onClick={stopPropagation} className="absolute right-3 top-2" asChild>
+                        <span className="p-2 -mt-6 rounded-full hover:bg-gray-100">
+                            <BsThreeDotsVertical />
+                        </span>
+                    </PopoverTrigger>
+                    <PopoverContent onClick={stopPropagation} className="w-[8rem] p-0">
+                        <DeleteDocument id={props.id} deleteFunc={deleteDocument}>
+                            <button className="w-full p-3 px-4 text-left hover:bg-gray-100">
+                                Delete
+                            </button>
+                        </DeleteDocument>
+                    </PopoverContent>
+                </Popover>
             </CardHeader>
             <CardFooter>
                 <p className="text-sm text-gray-500">Created {timeAgo.format(props.createdAt)}</p>
@@ -98,4 +96,28 @@ function DocumentItem(props: DocumentInfo) {
     )
 }
 
-export default DocumentList;
+function DeleteDocument(props: { id: string, deleteFunc: () => void, children?: React.ReactNode }) {
+    return (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                {props.children}
+            </AlertDialogTrigger>
+            <AlertDialogContent onClick={stopPropagation}>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the document.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter onClick={stopPropagation}>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={props.deleteFunc}>Continue</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    )
+}
+
+const stopPropagation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+}
