@@ -37,7 +37,7 @@ function DashboardPage() {
                 )
             }
             {
-                documents.length > 0 && (
+                !loading && (
                     <ScrollArea className="h-full">
                         <div className="w-full h-[calc(100%-5rem)] flex flex-col px-2 md:px-8 py-8">
                             <TooltipProvider>
