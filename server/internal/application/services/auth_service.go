@@ -55,12 +55,12 @@ func (as *AuthService) Authenticate(username string, password string) (uuid.UUID
 
 	credentials, err := as.credentialRepository.Find(user.Id)
 	if err != nil {
-		return uuid.Nil, errors.New("User not found")
+		return uuid.Nil, errors.New("user not found")
 	}
 
 	err = as.hasher.Compare(password, credentials.PassHash)
 	if err != nil {
-		return uuid.Nil, errors.New("Invalid credentials")
+		return uuid.Nil, errors.New("invalid credentials")
 	}
 
 	return user.Id, nil

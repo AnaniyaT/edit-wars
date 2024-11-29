@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/ananiyat/edit-wars/server/internal/adapters/dtos"
 	"github.com/ananiyat/edit-wars/server/internal/application/services"
 	"github.com/ananiyat/edit-wars/server/internal/domain/entities"
@@ -27,8 +26,6 @@ func (oa *OperationAdapter) RegisterRoutes(router *mux.Router) {
 func (oa *OperationAdapter) handleOperation(message websocket.Message) {
 	var wsMessage websocket.WSMessage[entities.Operation]
 	error := json.Unmarshal(message.Data, &wsMessage)
-
-	fmt.Println(wsMessage.Data)
 
 	if error != nil {
 		return

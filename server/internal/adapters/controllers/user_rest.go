@@ -31,7 +31,7 @@ func (uc *UserController) handleGetUser(w http.ResponseWriter, r *http.Request) 
 
 	user, err := uc.userService.GetUser(id)
 	if err != nil {
-		adapters.WriteError(w, http.StatusNotFound, errors.New("can't find user"))
+		adapters.WriteError(w, http.StatusNotFound, errors.New("user not found"))
 		return
 	}
 	if err := adapters.WriteJSON(w, http.StatusOK, user); err != nil {

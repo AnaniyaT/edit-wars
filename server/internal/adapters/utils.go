@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/ananiyat/edit-wars/server/internal/adapters/dtos"
 	"github.com/google/uuid"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -21,13 +22,14 @@ func WriteJSON(w http.ResponseWriter, statusCode int, output interface{}) error 
 }
 
 func WriteError(w http.ResponseWriter, statusCode int, error error) {
+	log.Println("error:", error.Error(), "status_code:", statusCode)
 	WriteJSON(w, statusCode, map[string]interface{}{"message": error.Error(), "status_code": statusCode})
 }
 
 func DecodeAuthHeader(authentication string) (dtos.AuthDto, error) {
 	split := strings.Split(authentication, " ")
 	if len(split) != 2 {
-		return dtos.AuthDto{}, errors.New("Invalid auth header format")
+		return dtos.AuthDto{}, errors.New("invalid auth header format")
 	}
 
 	basicAuthStr := split[1]
@@ -38,7 +40,7 @@ func DecodeAuthHeader(authentication string) (dtos.AuthDto, error) {
 	authStr := string(decodedBytes)
 	split = strings.Split(authStr, ":")
 	if len(split) != 2 {
-		return dtos.AuthDto{}, errors.New("Invalid auth header format")
+		return dtos.AuthDto{}, errors.New("invalid auth header format")
 	}
 
 	return dtos.AuthDto{Username: split[0], Password: split[1]}, nil

@@ -2,7 +2,6 @@ package websocket
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 )
 
@@ -66,9 +65,7 @@ func NewHub() *Hub {
 // For users of the api, pushes the message to the queue
 
 func (h *Hub) Broadcast(message Message) {
-	fmt.Println("broadcast called")
 	h.broadcast <- &message
-	fmt.Println("broadcast message sent")
 }
 
 // Register a message handler func to a message type
@@ -99,14 +96,12 @@ func (h *Hub) unregisterClient(client *Client) {
 
 // internal use, actually broadcasts
 func (h *Hub) broadcastMessage(message Message) {
-	fmt.Println("broadcasting message")
 	clients, ok := h.topics[message.TopicId]
 
 	if !ok {
 		return
 	}
 
-	fmt.Println("found", len(clients), "clients")
 	for client := range clients {
 		select {
 		case client.send <- message.Data:

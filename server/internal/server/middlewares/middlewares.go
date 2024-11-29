@@ -1,15 +1,15 @@
 package middlewares
 
 import (
-	"fmt"
 	"github.com/ananiyat/edit-wars/server/internal/adapters"
 	"github.com/ananiyat/edit-wars/server/internal/application/services"
+	"log"
 	"net/http"
 )
 
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		println(r.Method, r.URL.Path)
+		log.Print(r.Method, r.URL.Path)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -17,7 +17,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 func RemoveTrailingSlashMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if len(r.URL.Path) > 1 && r.URL.Path[len(r.URL.Path)-1] == '/' {
-			fmt.Print("Redirecting to ", r.URL.Path[:len(r.URL.Path)-1], "\n")
+			log.Print("Redirecting to ", r.URL.Path[:len(r.URL.Path)-1], "\n")
 			http.Redirect(w, r, r.URL.Path[:len(r.URL.Path)-1], http.StatusMovedPermanently)
 			return
 		}

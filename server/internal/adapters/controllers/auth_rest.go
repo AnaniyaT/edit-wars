@@ -3,7 +3,6 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ananiyat/edit-wars/server/internal/adapters"
 	"github.com/ananiyat/edit-wars/server/internal/adapters/dtos"
 	"github.com/ananiyat/edit-wars/server/internal/application/services"
@@ -36,7 +35,7 @@ func (ac *AuthController) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	userId, err := ac.authService.Authenticate(body.Username, body.Password)
 	if err != nil {
-		adapters.WriteError(w, http.StatusUnauthorized, errors.New("Invalid credentials"))
+		adapters.WriteError(w, http.StatusUnauthorized, errors.New("invalid credentials"))
 		return
 	}
 
@@ -50,11 +49,10 @@ func (ac *AuthController) handleRegister(w http.ResponseWriter, r *http.Request)
 
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		adapters.WriteError(w, http.StatusBadRequest, errors.New("Invalid body format"))
+		adapters.WriteError(w, http.StatusBadRequest, errors.New("invalid body format"))
 		return
 	}
 
-	fmt.Println(body)
 	userId, err := ac.authService.Create(body.Username, body.Password)
 
 	if err != nil {

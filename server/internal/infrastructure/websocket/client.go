@@ -3,7 +3,6 @@ package websocket
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -50,7 +49,6 @@ type Client struct {
 }
 
 func (c *Client) dispatchMessageHandler(message Message) {
-	fmt.Println("dispatching message handler")
 	var wsMessage WSMessage[any]
 	err := json.Unmarshal(message.Data, &wsMessage)
 	if err != nil {
@@ -153,5 +151,5 @@ func ServeWs(hub *Hub, clientId uuid.UUID, topicId uuid.UUID, userId uuid.UUID, 
 	// new goroutines.
 	go client.WritePump()
 	go client.ReadPump()
-	fmt.Println("serving websocket for", clientId)
+	log.Println("serving websocket for", clientId)
 }

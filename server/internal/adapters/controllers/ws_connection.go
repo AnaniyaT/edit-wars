@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"fmt"
+	"errors"
 	"github.com/ananiyat/edit-wars/server/internal/adapters"
 	"github.com/ananiyat/edit-wars/server/internal/adapters/dtos"
 	"github.com/ananiyat/edit-wars/server/internal/application/services"
@@ -30,15 +30,15 @@ func (ws *WebsocketAdapter) RegisterRoutes(router *mux.Router) {
 
 func (ws *WebsocketAdapter) WebsocketConnectHandler(w http.ResponseWriter, r *http.Request) {
 	req, err := parseWSQueryParams(r.URL.Query(), ws.authService)
-	fmt.Println(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		adapters.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 
 	exists, err := ws.documentService.Exists(req.DocumentId)
 	if err != nil || !exists {
-		http.Error(w, "Document does not exist", http.StatusNotFound)
+		adapters.WriteError(w, http.StatusNotFound, errors.New("document not found"))
+		return
 	}
 
 	websocket.ServeWs(ws.hub, req.ClientId, req.DocumentId, req.UserId, w, r)
@@ -47,7 +47,6 @@ func (ws *WebsocketAdapter) WebsocketConnectHandler(w http.ResponseWriter, r *ht
 func validateToken(token string, service *services.AuthService) (uuid.UUID, error) {
 	authDto, err := adapters.DecodeAuthHeader("Basic " + token)
 	if err != nil {
-		fmt.Println(err.Error())
 		return uuid.Nil, err
 	}
 
