@@ -11,6 +11,8 @@ services:
       retries: 10
     networks:
       - network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   client:
     env_file:
@@ -40,3 +42,6 @@ services:
 networks:
   network:
     driver: bridge
+
+volumes:
+  postgres_data:
