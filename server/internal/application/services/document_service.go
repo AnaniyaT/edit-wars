@@ -46,6 +46,10 @@ func (d *DocumentService) Exists(id uuid.UUID) (bool, error) {
 	return d.documentRepository.Exists(id)
 }
 
+func (d *DocumentService) Delete(document entities.Document) error {
+	return d.documentRepository.Delete(document)
+}
+
 func (d *DocumentService) ChangeTitle(id uuid.UUID, newTitle string) error {
 	document, err := d.documentRepository.Find(id)
 	if err != nil {

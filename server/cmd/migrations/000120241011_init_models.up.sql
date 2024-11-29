@@ -14,7 +14,7 @@ CREATE TABLE user_credentials (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
     pass_hash VARCHAR(255) NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users (id)
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 --bun:split
@@ -28,7 +28,7 @@ CREATE TABLE documents (
     owner_id UUID NOT NULL,
     title VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (owner_id) REFERENCES users (id)
+    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 --bun:split
@@ -42,7 +42,7 @@ CREATE TABLE characters (
     document_id UUID NOT NULL,
     position INTEGER[] NOT NULL,
     value CHAR(1) NOT NULL,
-    FOREIGN KEY (document_id) REFERENCES documents (id)
+    FOREIGN KEY (document_id) REFERENCES documents (id) ON DELETE CASCADE
 );
 
 --bun:split
@@ -59,7 +59,7 @@ CREATE TABLE operations (
     position INTEGER[] NOT NULL,
     client_id UUID NOT NULL,
     counter INTEGER NOT NULL,
-    FOREIGN KEY (document_id) REFERENCES documents (id)
+    FOREIGN KEY (document_id) REFERENCES documents (id) ON DELETE CASCADE
 );
 
 --bun:split

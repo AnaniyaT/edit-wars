@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/ananiyat/edit-wars/server/internal/adapters"
@@ -26,6 +25,7 @@ func (dc *DocumentController) RegisterRoutes(router *mux.Router) {
 	subRoute := router.PathPrefix("/documents").Subrouter()
 	subRoute.HandleFunc("", dc.handleNewDocument).Methods(http.MethodPost, http.MethodOptions)
 	subRoute.HandleFunc("", dc.handleGetDocuments).Methods(http.MethodGet, http.MethodOptions)
+	subRoute.HandleFunc("/{documentId}", dc.handleDeleteDocument).Methods(http.MethodDelete, http.MethodOptions)
 	router.HandleFunc("/documents/{documentId}", dc.handleGetDocument).Methods(http.MethodGet, http.MethodOptions)
 
 	for _, middleware := range dc.middlewares {
@@ -64,7 +64,6 @@ func (dc *DocumentController) handleNewDocument(w http.ResponseWriter, r *http.R
 
 	userId, err := adapters.GetUserId(r)
 
-	fmt.Println("userId", userId)
 	if err != nil {
 		adapters.WriteError(w, http.StatusInternalServerError, errors.New("unable to get user"))
 		return
@@ -91,7 +90,7 @@ func (dc *DocumentController) handleGetDocument(w http.ResponseWriter, r *http.R
 
 	document, err := dc.documentService.GetDocumentById(documentId)
 	if err != nil {
-		adapters.WriteError(w, http.StatusInternalServerError, errors.New("server error"))
+		adapters.WriteError(w, http.StatusNotFound, errors.New("document Not found"))
 		return
 	}
 
@@ -105,5 +104,32 @@ func (dc *DocumentController) handleGetDocument(w http.ResponseWriter, r *http.R
 	if err := adapters.WriteJSON(w, http.StatusOK, response); err != nil {
 		adapters.WriteError(w, http.StatusInternalServerError, errors.New("server error"))
 		return
+	}
+}
+
+func (dc *DocumentController) handleDeleteDocument(w http.ResponseWriter, r *http.Request) {
+	documentId, err := uuid.Parse(mux.Vars(r)["documentId"])
+	if err != nil {
+		adapters.WriteError(w, http.StatusBadRequest, errors.New("document id required"))
+		return
+	}
+	document, err := dc.documentService.GetDocumentById(documentId)
+	if err != nil {
+		adapters.WriteError(w, http.StatusNotFound, errors.New("document not found"))
+		return
+	}
+	userId, err := uuid.Parse(r.Header.Get("userId"))
+
+	if userId != document.OwnerId {
+		adapters.WriteError(w, http.StatusForbidden, errors.New("operation not allowed"))
+	}
+	err = dc.documentService.Delete(document)
+	if err != nil {
+		adapters.WriteError(w, http.StatusInternalServerError, errors.New("server error"))
+		return
+	}
+
+	if err := adapters.WriteJSON(w, http.StatusNoContent, ""); err != nil {
+		adapters.WriteError(w, http.StatusInternalServerError, errors.New("server error"))
 	}
 }

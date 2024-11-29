@@ -1,7 +1,7 @@
 CREATE TABLE sessions (
   id UUID PRIMARY KEY,
   user_id UUID NOT NULL,
-  FOREIGN KEY (user_id) REFERENCES users (id)
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 --bun:split
