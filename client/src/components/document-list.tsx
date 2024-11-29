@@ -72,7 +72,7 @@ function DocumentItem(props: DocumentInfo) {
             <CardHeader className="flex flex-row justify-between items-start">
                 <div>
                     <CardTitle>{props.title}</CardTitle>
-                    <CardDescription>{user ? "@" + user.username : ""}</CardDescription>
+                    <CardDescription>{"@" + (user ? user.username : "unknown")}</CardDescription>
                 </div>
                 <Popover>
                     <PopoverTrigger onClick={stopPropagation} className="absolute right-3 top-2" asChild>
